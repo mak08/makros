@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2021-03-22 23:25:57>
+;;; Last Modified <michael 2021-03-30 23:32:05>
 
 (defpackage macros
   (:use :cl)
@@ -20,20 +20,57 @@
                   (declare ,@declarations)
                   ,@body))))
 
-(defmacro defun-t (name return-type (&rest typed-args) &body body)
-  (loop
-    :for (var type) :in typed-args
-    :collect (list type var) :into declarations
-    :collect var :into args
-    :finally (return
-               `(progn
-                  (declaim (ftype (function ,(mapcar #'car declarations) ,return-type) ,name))
-                  (defun ,name ,args (declare ,@declarations) ,@body)))))
-
-
-(defun-t x fixnum ((x fixnum))
-  (let ((x (* x x)))
-    x))
+(defun parse-lambda-list (l)
+  (flet ((make-argtypespec (other-args)
+           (do*
+            ((mode :required)
+             (result (list))
+             (unprocessed other-args (cdr unprocessed))
+             (next (car unprocessed) (car unprocessed)))
+            ((null unprocessed)
+             (reverse result))
+             (cond
+               ((eq next '&optional)
+                (push next result)
+                (setf mode :optional))
+               ((eq next '&key)
+                (push next result)
+                (setf mode :key))
+               ((member next '(&rest &aux))
+                (error "Unsupported lambda list ~a" unprocessed))
+               (t
+                (case mode
+                  ((:required :optional)
+                   (push t result))
+                  (:key
+                   (cond
+                     ((atom next)
+                      (push (list (intern (symbol-name next) :keyword)
+                                  t)
+                            result))
+                     (t
+                      (push (list (intern (symbol-name (car next)) :keyword)
+                                  ;; Keyword type might be derived from inital value, use T for now
+                                  t)
+                            result))))))))))
+    (loop
+      :for (a . r) :on l
+      :while (consp a)
+      :collect (list (cadr a) (car a)) :into declarations
+      :collect (cadr a) :into fargtypes
+      :collect (car a) :into args
+      :finally (let ((other-args
+                       (if (atom a) (cons a r) r)))
+                 (return (values (append args other-args)
+                                 (append fargtypes (make-argtypespec other-args))
+                                 declarations))))))
+  
+(defmacro defun-t (name return-type (&rest typed-arglist) &body body)
+  (multiple-value-bind (lambda-list argtypes declarations)
+      (parse-lambda-list typed-arglist)
+    `(progn
+       (declaim (ftype (function ,argtypes ,return-type) ,name))
+       (defun ,name ,lambda-list (declare ,@declarations) ,@body))))
 
 ;;; EOF
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
