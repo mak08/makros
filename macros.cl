@@ -1,12 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2021-03-30 23:32:05>
-
-(defpackage macros
-  (:use :cl)
-  (:export "LET-T"
-           "DEFUN-T"))
+;;; Last Modified <michael 2021-06-08 21:19:29>
 
 (in-package macros)
 
