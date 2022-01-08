@@ -1,9 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2021-06-08 21:19:29>
+;;; Last Modified <michael 2021-12-16 20:01:08>
 
 (in-package macros)
+
 
 (defmacro let-t ((&rest typed-bindings) &body body)
   (loop
@@ -66,6 +67,13 @@
     `(progn
        (declaim (ftype (function ,argtypes ,return-type) ,name))
        (defun ,name ,lambda-list (declare ,@declarations) ,@body))))
+
+
+(defvar *bg-thread-counter* 0)
+(defmacro bg  (&body body)
+  `(bordeaux-threads:make-thread (lambda ()
+                                   ,@body)
+                                 :name (format nil "BG-~a" (incf *bg-thread-counter*))))
 
 ;;; EOF
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
