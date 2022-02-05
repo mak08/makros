@@ -1,10 +1,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2021-12-16 20:01:08>
+;;; Last Modified <michael 2022-01-30 11:52:36>
 
 (in-package macros)
 
+
+(defmacro check-delta-equal (form result)
+  `(progn
+     (assert (equal (ftruncate ,form 0.00001) (ftruncate ,result 0.00001)))
+     t)
+  )
+(defmacro check-equal (form result)
+  `(progn
+     (assert (equal ,form ,result))
+     t)
+  )
 
 (defmacro let-t ((&rest typed-bindings) &body body)
   (loop
