@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2022
-;;; Last Modified <michael 2022-01-30 14:01:14>
+;;; Last Modified <michael 2022-03-31 21:54:59>
 
 (in-package :macros)
 
@@ -167,7 +167,7 @@
 
 (defun parse-json-file (filename)
   (log2:trace "Loading JSON from ~a~%" filename)
-  (with-open-file (f filename :element-type 'character)
+  (with-open-file (f filename :element-type 'character :external-format :utf-8)
     (let ((json-string (make-string (file-length f))))
       (read-sequence json-string f)
       (log2:trace "Parsing, size: ~a" (length json-string))
