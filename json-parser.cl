@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2022
-;;; Last Modified <michael 2022-03-31 21:54:59>
+;;; Last Modified <michael 2022-06-06 23:13:20>
 
 (in-package :macros)
 
@@ -10,6 +10,55 @@
 
 ;; JSON Array
 ;; Represented by Lisp array
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Aux functions
+
+
+(declaim (inline peek))
+(defun peek (s c)
+  (declare (special pos)
+           (simple-string s)
+           (character c))
+  (eql (aref s pos) c))
+
+(declaim (inline expect))
+(defun expect (s c)
+  (declare (special pos)
+           (fixnum pos)
+           (simple-string s)
+           (character c))
+  (unless (eql (aref s pos) c)
+    (error "At position ~a: expected ~a but got ~a" pos c (aref s pos)))
+  (incf pos))
+
+(declaim (inline is-white))
+(defun is-white (char)
+  (declare (character char))
+  (or (eql char #\Space)
+      (eql char #\Tab)
+      (eql char #\Return)
+      (eql char #\Newline)))
+
+(declaim (inline whitespace))
+(defun whitespace (s)
+  (declare (special pos)
+           (fixnum pos)
+           (simple-string s))
+  (loop :while (and (< pos (length s))
+                    (is-white (aref s pos))) :do (incf pos)))
+
+(declaim (inline is-numchar))
+(defun is-numchar (c)
+  (position c "0123456789.Ee+-"))
+
+(declaim (inline start-with))
+(defun starts-with (s1 s2 start1)
+  (declare (simple-string s1 s2)
+           (fixnum start1))
+  (let ((m (mismatch s1 s2 :start1 start1)))
+    (or (null m)
+        (>= m (+ start1 (length s2))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;  - Does support circular objects. An error will be signalled.
@@ -126,13 +175,28 @@
   (format stream "]"))
  
 (defmethod json% (stream (thing array))
-  (format stream "[")
   (loop
-     :for k :below (length thing)
-     :for element :across thing
-     :do (json% stream element)
-     :when (< k (1- (length thing))) :do (format stream ", "))
-  (format stream "]"))
+    :with size = (array-total-size thing)
+    :with dim = (reverse (array-dimensions thing))
+    :for idx :below size
+    :for ele = (row-major-aref thing idx)
+    :do (progn
+          (loop
+            :for d :in dim
+            :for q = d :then (* q d)
+            :while (zerop (mod idx q))
+              :do (format stream "["))
+          (json% stream ele)
+          (when (loop
+                  :with more-p = nil
+                  :for d :in dim
+                  :for q = d :then (* q d)
+                  :while (not more-p)
+                  :do (if (zerop (mod (1+ idx) q))
+                          (format stream "]")
+                          (setf more-p t))
+                  :finally (return more-p))
+            (format stream  ",")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Special types
@@ -169,9 +233,11 @@
   (log2:trace "Loading JSON from ~a~%" filename)
   (with-open-file (f filename :element-type 'character :external-format :utf-8)
     (let ((json-string (make-string (file-length f))))
-      (read-sequence json-string f)
-      (log2:trace "Parsing, size: ~a" (length json-string))
-      (parse-json json-string))))
+      (let ((size (read-sequence json-string f)))
+        (when (> size  4294967296)
+          (error "File ~a exceeds maximum size of ~a" filename  4294967296))
+        (log2:trace "Parsing, size: ~a" (length json-string))
+        (parse-json json-string)))))
 
 
 (defun parse-json (s)
@@ -181,7 +247,9 @@
     (parse-json-expr s)))
 
 (defun parse-json-expr (s)
-  (declare (special pos))
+  (declare (special pos)
+           ((integer 0 4294967296)  pos)
+           (simple-string s))
   (case (aref s pos)
     (#\{
      (parse-json-object s))
@@ -209,7 +277,8 @@
         (error "Invalid character ~a at position ~a" (aref s pos) pos))))))
 
 (defun parse-json-array (s)
-  (declare (special pos))
+  (declare (special pos)
+           (fixnum pos))
   (expect s #\[)
   (whitespace s)
   (let ((elements
@@ -225,7 +294,8 @@
     (make-array (length elements) :initial-contents elements)))
   
 (defun parse-json-object (s)
-  (declare (special pos))
+  (declare (special pos)
+           (fixnum pos))
   (expect s #\{)
   (whitespace s)
   (let ((fields
@@ -250,7 +320,8 @@
       (make-json-field :name name :value value))))
 
 (defun parse-json-string (s)
-  (declare (special pos))
+  (declare (special pos)
+           (simple-string s))
   (expect s #\")
   (let ((end (string-end s :start pos)))
     (when (null end)
@@ -261,10 +332,10 @@
       (values string))))
 
 (defun string-end (s &key start (delim #\") (escape #\\))
-  (declare (string s)
+  (declare (simple-string s)
            (character delim escape))
   (loop
-     :for k :from start :below (length s)
+     :for k :of-type fixnum :from start :below (length s)
      :until (and (eql (aref s k) delim)
                  (not (eql (aref s (1- k)) escape)))
      :finally (return
@@ -272,7 +343,8 @@
                   k))))
 
 (defun parse-json-number (s)
-  (declare (special pos))
+  (declare (special pos)
+           (simple-string s))
   (let ((end
          (loop
             :for end :from pos
@@ -285,37 +357,6 @@
       (setf pos end)
       (whitespace s)
       n)))
-
-
-(defun peek (s c)
-  (declare (special pos))
-  (eql (aref s pos) c))
-
-(defun expect (s c)
-  (declare (special pos))
-  (unless (eql (aref s pos) c)
-    (error "At position ~a: expected ~a but got ~a" pos c (aref s pos)))
-  (incf pos))
-
-(defun whitespace (s)
-  (declare (special pos))
-  (loop :while (and (< pos (length s))
-                    (is-white (aref s pos))) :do (incf pos)))
-  
-(defun is-numchar (c)
-  (position c "0123456789.Ee+-"))
-
-(defun starts-with (s1 s2 start1)
-  (let ((m (mismatch s1 s2 :start1 start1)))
-    (or (null m)
-        (>= m (+ start1 (length s2))))))
-
-(defun is-white (char)
-  (declare (character char))
-  (or (eql char #\Space)
-      (eql char #\Tab)
-      (eql char #\Return)
-      (eql char #\Newline)))
 
 ;;; EOF
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
