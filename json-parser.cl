@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2022
-;;; Last Modified <michael 2022-06-06 23:13:20>
+;;; Last Modified <michael 2023-06-07 19:29:51>
 
 (in-package :macros)
 
@@ -10,6 +10,8 @@
 
 ;; JSON Array
 ;; Represented by Lisp array
+
+(defvar *float-digits* 4)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Aux functions
@@ -80,10 +82,10 @@
   (format stream "~a" thing))
 
 (defmethod json% (stream (thing double-float))
-  (format stream "~4$" thing))
+  (format stream (format nil "~~~d$" *floaT-digits*) thing))
 
 (defmethod json% (stream (thing single-float))
-  (format stream "~4$" thing))
+  (format stream (format nil "~~~d$" *floaT-digits*) thing))
 
 (defmethod json% (stream (thing timestamp))
   (format stream "\"~a\"" (format-datetime nil thing)))
@@ -222,6 +224,13 @@
   (format stream "~a: ~a"
           (json-field-name thing)
           (json-field-value thing)))
+
+(defun set-json-object-field (json-object field-name value)
+  (pushnew (make-json-field :name field-name :value value)
+           (json-object-fields json-object)
+           :test #'equalp))
+
+(defsetf joref set-json-object-field)
 
 (defun joref (json-object field-name)
   (loop
