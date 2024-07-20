@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2022-01-30 11:52:36>
+;;; Last Modified <michael 2023-03-05 20:24:32>
 
 (in-package macros)
 
@@ -24,6 +24,16 @@
     :collect (list type var) :into declarations
     :finally (return
                `(let ,bindings
+                  (declare ,@declarations)
+                  ,@body))))
+
+(defmacro let*-t ((&rest typed-bindings) &body body)
+  (loop
+    :for (var type value) :in typed-bindings
+    :collect (list var value) :into bindings
+    :collect (list type var) :into declarations
+    :finally (return
+               `(let* ,bindings
                   (declare ,@declarations)
                   ,@body))))
 

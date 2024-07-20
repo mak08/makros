@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2022
-;;; Last Modified <michael 2023-06-07 19:29:51>
+;;; Last Modified <michael 2024-07-06 16:46:00>
 
 (in-package :macros)
 
@@ -67,10 +67,15 @@
 ;;;  - Does not support all Lisp data types. Empty or invalid JSON will be generated.
 ;;;  - Not reversible. JSON cannot be mapped back to Lisp except in some trivial cases.
 
-(defun json (stream thing)
+(defun json (stream thing &key (preserve-slotname-case nil))
   "Serialize a Lisp object to JSON. Does not support circular references."
-  (let ((seen-ht (make-hash-table)))
-    (declare (special seen-ht))
+  (let ((seen-ht
+          (make-hash-table))
+        (slotname-formatter
+          (if preserve-slotname-case
+              "\"~a\": "
+              "\"~(~a~)\": ")))
+    (declare (special seen-ht slotname-formatter))
     (json% stream thing)))
 
 (defgeneric json% (stream thing))
@@ -111,20 +116,20 @@
   (format stream "true"))
  
 (defmethod json% (stream (thing structure-object))
-  (declare (special seen-ht))
+  (declare (special seen-ht slotname-formatter))
   (cond
     ((gethash thing seen-ht)
      (error "Circular objects are not supported"))
     (t
      ;; (setf (gethash thing seen-ht) t)
-     (format stream "{")
+     (format stream "{~%")
      (loop
         :for (slotname . rest) :on (filtered-slots thing)
         :do  (progn
-               (format stream "\"~(~a~)\": " slotname)
+               (format stream slotname-formatter slotname)
                (json% stream (slot-value thing slotname)))
-        :when rest :do (format stream ", "))
-     (format stream "}"))))
+        :when rest :do (format stream ",~%"))
+     (format stream "~%}"))))
 
 (defun filtered-slots (thing)
   (let ((slots (class-slots (class-of thing))))
@@ -169,12 +174,12 @@
   (format stream "}"))
  
 (defmethod json% (stream (thing list))
-  (format stream "[")
+  (format stream "[~%")
   (loop
      :for (element . rest) :on thing
      :do (json% stream element)
-     :when rest :do (format stream ", "))
-  (format stream "]"))
+     :when rest :do (format stream ",~%"))
+  (format stream "~%]"))
  
 (defmethod json% (stream (thing array))
   (loop

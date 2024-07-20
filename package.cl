@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2022-01-30 13:49:14>
+;;; Last Modified <michael 2023-03-05 20:24:45>
 
 (defpackage macros
   (:use :cl :sb-mop :local-time)
@@ -21,6 +21,7 @@
             "TRUE"
             
             "LET-T"
+            "LET*-T"
             "DEFUN-T"
 
             "GET-LIBRARY"
