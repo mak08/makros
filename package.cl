@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2023-03-05 20:24:45>
+;;; Last Modified <michael 2025-10-16 23:04:25>
 
 (defpackage macros
   (:use :cl :sb-mop :local-time)
@@ -19,6 +19,9 @@
             "JSON-OBJECT-FIELDS"
             "FALSE"
             "TRUE"
+
+            "MAKE-JSON-OBJECT"
+            "MAKE-JSON-FIELD"
             
             "LET-T"
             "LET*-T"

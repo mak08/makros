@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2023-03-05 20:24:32>
+;;; Last Modified <michael 2025-10-11 23:17:10>
 
 (in-package macros)
 
@@ -73,7 +73,7 @@
     (loop
       :for (a . r) :on l
       :while (consp a)
-      :collect (list (cadr a) (car a)) :into declarations
+      :collect (list 'type (cadr a) (car a)) :into declarations
       :collect (cadr a) :into fargtypes
       :collect (car a) :into args
       :finally (let ((other-args
