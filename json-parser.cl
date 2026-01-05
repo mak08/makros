@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2022
-;;; Last Modified <michael 2024-07-06 16:46:00>
+;;; Last Modified <michael 2026-01-05 19:11:20>
 
 (in-package :macros)
 
@@ -254,11 +254,11 @@
         (parse-json json-string)))))
 
 
-(defun parse-json (s)
-  (let ((pos 0))
-    (declare (special pos))
-    (whitespace s)
-    (parse-json-expr s)))
+(defun parse-json (s &optional (pos 0))
+  (declare (special pos))
+  (whitespace s)
+  (values (parse-json-expr s)
+          pos))
 
 (defun parse-json-expr (s)
   (declare (special pos)

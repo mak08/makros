@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Description
 ;;; Author         Michael Kappert 2021
-;;; Last Modified <michael 2025-10-11 23:17:10>
+;;; Last Modified <michael 2025-11-02 00:54:02>
 
 (in-package macros)
 
@@ -81,7 +81,7 @@
                  (return (values (append args other-args)
                                  (append fargtypes (make-argtypespec other-args))
                                  declarations))))))
-  
+
 (defmacro defun-t (name return-type (&rest typed-arglist) &body body)
   (multiple-value-bind (lambda-list argtypes declarations)
       (parse-lambda-list typed-arglist)
