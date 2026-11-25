@@ -19,6 +19,7 @@
             "JSON-OBJECT-FIELDS"
             "FALSE"
             "TRUE"
+            "JSON-NULL"
 
             "MAKE-JSON-OBJECT"
             "MAKE-JSON-FIELD"
